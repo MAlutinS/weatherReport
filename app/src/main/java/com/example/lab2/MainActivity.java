@@ -38,12 +38,14 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_IS_DARK_MODE = "is_dark_mode";
     private static final String KEY_UNITS = "units";
+    private static final String KEY_WEATHER_DATA = "weather_data"; // ключ для сохранения прогноза
     private TextView weatherTextView;
     private EditText cityEditText;
     private Button getWeatherButton;
 
     private final String API_KEY = "2bba9b0a51e507ac78f51f61f46cddf1";  // Проверь, что API-ключ правильный
     private String units = "metric";  // По умолчанию используем Цельсий
+    private String savedWeatherData = null;  // Переменная для сохранения прогноза
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +68,14 @@ public class MainActivity extends AppCompatActivity {
         // Проверка сохраненной системы измерений
         units = preferences.getString(KEY_UNITS, "metric");
         unitsSwitch.setChecked(units.equals("imperial"));
+
+        // Если сохранён прогноз, восстанавливаем его
+        if (savedInstanceState != null) {
+            savedWeatherData = savedInstanceState.getString(KEY_WEATHER_DATA);
+            if (savedWeatherData != null) {
+                weatherTextView.setText(savedWeatherData);
+            }
+        }
 
         // Обработчик переключателя для смены единиц измерения
         unitsSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -104,11 +114,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String city = cityEditText.getText().toString().trim();
                 if (!city.isEmpty()) {
-                    if (isNetworkAvailable()) {
-                        getForecastData(city);
-                    } else {
-                        Toast.makeText(MainActivity.this, "No internet connection", Toast.LENGTH_SHORT).show();
-                    }
+                    getForecastData(city);
                 } else {
                     Toast.makeText(MainActivity.this, "Please enter a city name", Toast.LENGTH_SHORT).show();
                 }
@@ -141,14 +147,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Метод для проверки интернет-соединения
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivityManager != null) {
-            android.net.NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
-            return activeNetwork != null && activeNetwork.isConnected();
+    // Сохранение данных при смене конфигурации
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Сохраняем прогноз погоды, если он есть
+        if (weatherTextView.getText() != null) {
+            outState.putString(KEY_WEATHER_DATA, weatherTextView.getText().toString());
         }
-        return false;
     }
 
     // Метод для получения данных о погоде
@@ -182,15 +188,21 @@ public class MainActivity extends AppCompatActivity {
 
                         String date = item.getDateTime();
                         double temp = item.getMain().getTemp();
+                        int humidity = item.getMain().getHumidity();  // Получаем влажность
+                        double windSpeed = item.getWind().getSpeed();  // Получаем скорость ветра
                         String description = item.getWeatherList().get(0).getDescription();
                         String unitLabel = units.equals("metric") ? "°C" : "°F";
+                        String windSpeedUnit = units.equals("metric") ? "m/s" : "mph";  // Единицы измерения ветра
 
                         forecastInfo.append("Date: ").append(date).append("\n")
                                 .append("Temp: ").append(temp).append(unitLabel).append("\n")
-                                .append("Weather: ").append(description).append("\n\n");
+                                .append("Weather: ").append(description).append("\n")
+                                .append("Humidity: ").append(humidity).append("%").append("\n")  // Влажность
+                                .append("Wind Speed: ").append(windSpeed).append(" ").append(windSpeedUnit).append("\n\n");  // Скорость ветра
                     }
 
-                    weatherTextView.setText(forecastInfo.toString());
+                    savedWeatherData = forecastInfo.toString();  // Сохраняем прогноз
+                    weatherTextView.setText(savedWeatherData);
                 } else {
                     Log.e("MainActivity", "Error in response: " + response.message());
                     Toast.makeText(MainActivity.this, "Error in forecast response: " + response.message(), Toast.LENGTH_LONG).show();

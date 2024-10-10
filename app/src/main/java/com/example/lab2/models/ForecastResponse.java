@@ -13,6 +13,7 @@ public class ForecastResponse {
     }
 
     public static class ForecastItem {
+
         @SerializedName("dt_txt")
         private String dateTime;
 
@@ -21,6 +22,9 @@ public class ForecastResponse {
 
         @SerializedName("weather")
         private List<Weather> weatherList;
+
+        @SerializedName("wind")
+        private Wind wind;
 
         public String getDateTime() {
             return dateTime;
@@ -33,14 +37,25 @@ public class ForecastResponse {
         public List<Weather> getWeatherList() {
             return weatherList;
         }
+
+        public Wind getWind() {
+            return wind;
+        }
     }
 
     public static class Main {
         @SerializedName("temp")
         private double temp;
 
+        @SerializedName("humidity")  // Поле для влажности
+        private int humidity;
+
         public double getTemp() {
             return temp;
+        }
+
+        public int getHumidity() {
+            return humidity;
         }
     }
 
@@ -50,6 +65,15 @@ public class ForecastResponse {
 
         public String getDescription() {
             return description;
+        }
+    }
+
+    public static class Wind {
+        @SerializedName("speed")  // Поле для скорости ветра
+        private double speed;
+
+        public double getSpeed() {
+            return speed;
         }
     }
 }

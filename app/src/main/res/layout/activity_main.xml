@@ -1,77 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:fillViewport="true">
 
-    <!-- Переключатель темы -->
-    <Switch
-        android:id="@+id/themeSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Dark Mode"
-        android:checked="false"
-        android:minWidth="48dp"
-        android:minHeight="48dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:padding="16dp" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <!-- Поле для ввода города -->
-    <EditText
-        android:id="@+id/cityEditText"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Enter city"
-        app:layout_constraintTop_toBottomOf="@id/themeSwitch"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:padding="16dp"
-        android:layout_marginTop="16dp"
-        android:inputType="text" />
+        <!-- Переключатель темы -->
+        <Switch
+            android:id="@+id/themeSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dark Mode"
+            android:checked="false"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp"
+            android:padding="16dp" />
 
-    <!-- Переключатель для выбора системы измерений -->
-    <Switch
-        android:id="@+id/unitsSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Use Fahrenheit"
-        android:checked="false"
-        android:minWidth="48dp"
-        android:minHeight="48dp"
-        app:layout_constraintTop_toBottomOf="@id/cityEditText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:padding="16dp" />
+        <!-- Поле для ввода города -->
+        <EditText
+            android:id="@+id/cityEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Enter city"
+            app:layout_constraintTop_toBottomOf="@id/themeSwitch"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:padding="16dp"
+            android:layout_marginTop="16dp"
+            android:inputType="text" />
 
-    <!-- Кнопка для получения погоды -->
-    <Button
-        android:id="@+id/getWeatherButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Get Weather"
-        app:layout_constraintTop_toBottomOf="@id/unitsSwitch"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"/>
+        <!-- Переключатель для выбора системы измерений -->
+        <Switch
+            android:id="@+id/unitsSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Use Fahrenheit"
+            android:checked="false"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            app:layout_constraintTop_toBottomOf="@id/cityEditText"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp"
+            android:padding="16dp" />
 
-    <!-- Поле для вывода информации о погоде -->
-    <TextView
-        android:id="@+id/weatherTextView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Weather info will appear here"
-        app:layout_constraintTop_toBottomOf="@id/getWeatherButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:padding="16dp"
-        android:textSize="16sp" />
+        <!-- Кнопка для получения погоды -->
+        <Button
+            android:id="@+id/getWeatherButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Get Weather"
+            app:layout_constraintTop_toBottomOf="@id/unitsSwitch"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Поле для вывода информации о погоде -->
+        <TextView
+            android:id="@+id/weatherTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Weather info will appear here"
+            app:layout_constraintTop_toBottomOf="@id/getWeatherButton"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:textSize="16sp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
