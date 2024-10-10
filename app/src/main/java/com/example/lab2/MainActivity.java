@@ -1,5 +1,7 @@
 package com.example.lab2;
 
+import java.util.List;
+
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -151,17 +153,16 @@ public class MainActivity extends AppCompatActivity {
 
     // Метод для получения данных о погоде
     private void getForecastData(String city) {
-        // Настроим OkHttpClient с увеличенным тайм-аутом
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)  // Время ожидания подключения
-                .writeTimeout(30, TimeUnit.SECONDS)    // Время ожидания записи
-                .readTimeout(30, TimeUnit.SECONDS)     // Время ожидания чтения (ответа)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.openweathermap.org/data/2.5/")  // Правильный базовый URL
+                .baseUrl("https://api.openweathermap.org/data/2.5/")
                 .addConverterFactory(GsonConverterFactory.create())
-                .client(okHttpClient)  // Применяем кастомный OkHttpClient
+                .client(okHttpClient)
                 .build();
 
         WeatherApi weatherApi = retrofit.create(WeatherApi.class);
@@ -171,11 +172,14 @@ public class MainActivity extends AppCompatActivity {
         call.enqueue(new Callback<ForecastResponse>() {
             @Override
             public void onResponse(Call<ForecastResponse> call, Response<ForecastResponse> response) {
-                Log.d("MainActivity", "Response code: " + response.code());
-
                 if (response.isSuccessful() && response.body() != null) {
                     StringBuilder forecastInfo = new StringBuilder();
-                    for (ForecastResponse.ForecastItem item : response.body().getForecastList()) {
+                    List<ForecastResponse.ForecastItem> forecastList = response.body().getForecastList();
+
+                    // Фильтруем прогнозы, оставляя только каждые 12 часов
+                    for (int i = 0; i < forecastList.size(); i += 4) {  // 4 интервала по 3 часа = 12 часов
+                        ForecastResponse.ForecastItem item = forecastList.get(i);
+
                         String date = item.getDateTime();
                         double temp = item.getMain().getTemp();
                         String description = item.getWeatherList().get(0).getDescription();
@@ -185,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
                                 .append("Temp: ").append(temp).append(unitLabel).append("\n")
                                 .append("Weather: ").append(description).append("\n\n");
                     }
+
                     weatherTextView.setText(forecastInfo.toString());
                 } else {
                     Log.e("MainActivity", "Error in response: " + response.message());
