@@ -11,12 +11,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Switch;
 
+import android.net.ConnectivityManager;
+import android.content.Context;
+import android.net.NetworkInfo;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.lab2.api.WeatherApi;
-import com.example.lab2.models.WeatherResponse;
+import com.example.lab2.models.ForecastResponse;
 
-import java.util.Objects;
+import okhttp3.OkHttpClient;
+import java.util.concurrent.TimeUnit;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -26,16 +31,95 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    // Объявляем переменные для элементов интерфейса
     private Switch themeSwitch;
+    private Switch unitsSwitch;
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_IS_DARK_MODE = "is_dark_mode";
+    private static final String KEY_UNITS = "units";
     private TextView weatherTextView;
     private EditText cityEditText;
     private Button getWeatherButton;
 
-    // Твой ключ API
-    private final String API_KEY = "2bba9b0a51e507ac78f51f61f46cddf1";
+    private final String API_KEY = "2bba9b0a51e507ac78f51f61f46cddf1";  // Проверь, что API-ключ правильный
+    private String units = "metric";  // По умолчанию используем Цельсий
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        loadTheme();  // Загрузка сохраненной темы перед созданием UI
+        setContentView(R.layout.activity_main);
+
+        // Инициализация элементов интерфейса
+        themeSwitch = findViewById(R.id.themeSwitch);
+        unitsSwitch = findViewById(R.id.unitsSwitch);  // Инициализируем переключатель для единиц измерения
+        weatherTextView = findViewById(R.id.weatherTextView);
+        cityEditText = findViewById(R.id.cityEditText);
+        getWeatherButton = findViewById(R.id.getWeatherButton);
+
+        // Восстановление сохраненной темы
+        SharedPreferences preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean isDarkMode = preferences.getBoolean(KEY_IS_DARK_MODE, false);
+        themeSwitch.setChecked(isDarkMode);
+
+        // Проверка сохраненной системы измерений
+        units = preferences.getString(KEY_UNITS, "metric");
+        unitsSwitch.setChecked(units.equals("imperial"));
+
+        // Обработчик переключателя для смены единиц измерения
+        unitsSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    units = "imperial";  // Если переключатель включен, используем Фаренгейты
+                    Toast.makeText(MainActivity.this, "Using Fahrenheit", Toast.LENGTH_SHORT).show();
+                } else {
+                    units = "metric";  // Иначе используем Цельсий
+                    Toast.makeText(MainActivity.this, "Using Celsius", Toast.LENGTH_SHORT).show();
+                }
+                // Сохраняем выбранную систему измерений
+                saveUnits(units);
+            }
+        });
+
+        // Обработчик для изменения темы
+        themeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    setTheme(R.style.Theme_Lab2_Dark);
+                    saveTheme(true);
+                } else {
+                    setTheme(R.style.Theme_Lab2);
+                    saveTheme(false);
+                }
+                recreate();
+            }
+        });
+
+        // Обработчик кнопки получения прогноза
+        getWeatherButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String city = cityEditText.getText().toString().trim();
+                if (!city.isEmpty()) {
+                    if (isNetworkAvailable()) {
+                        getForecastData(city);
+                    } else {
+                        Toast.makeText(MainActivity.this, "No internet connection", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "Please enter a city name", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    // Сохранение выбранной системы измерений
+    private void saveUnits(String units) {
+        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+        editor.putString(KEY_UNITS, units);
+        editor.apply();
+    }
 
     // Сохранение состояния темы
     private void saveTheme(boolean isDarkMode) {
@@ -55,92 +139,63 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-
-        // Загрузка сохраненной темы перед созданием UI
-        loadTheme();
-
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        // Инициализация элементов интерфейса
-        themeSwitch = findViewById(R.id.themeSwitch);
-        weatherTextView = findViewById(R.id.weatherTextView);
-        cityEditText = findViewById(R.id.cityEditText);
-        getWeatherButton = findViewById(R.id.getWeatherButton);
-
-        // Чтение сохраненного состояния переключателя темы
-        SharedPreferences preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        boolean isDarkMode = preferences.getBoolean(KEY_IS_DARK_MODE, false);
-        themeSwitch.setChecked(isDarkMode);
-
-        // Обработчик изменения темы
-        themeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    setTheme(R.style.Theme_Lab2_Dark);
-                    saveTheme(true);
-                } else {
-                    setTheme(R.style.Theme_Lab2);
-                    saveTheme(false);
-                }
-                // Перезапуск activity для применения изменений темы
-                recreate();
-            }
-        });
-
-        // Обработчик нажатия кнопки для получения погоды
-        getWeatherButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String city = cityEditText.getText().toString().trim();
-
-                if (!city.isEmpty()) {
-                    getWeatherData(city);  // Вызов метода для запроса погоды
-                } else {
-                    Toast.makeText(MainActivity.this, "Please enter a city name", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+    // Метод для проверки интернет-соединения
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            android.net.NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
+            return activeNetwork != null && activeNetwork.isConnected();
+        }
+        return false;
     }
 
-    // Метод для получения данных о погоде с помощью Retrofit
-    private void getWeatherData(String city) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.openweathermap.org/data/2.5/") // Базовый URL для API
-                .addConverterFactory(GsonConverterFactory.create()) // Конвертер для работы с JSON
+    // Метод для получения данных о погоде
+    private void getForecastData(String city) {
+        // Настроим OkHttpClient с увеличенным тайм-аутом
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)  // Время ожидания подключения
+                .writeTimeout(30, TimeUnit.SECONDS)    // Время ожидания записи
+                .readTimeout(30, TimeUnit.SECONDS)     // Время ожидания чтения (ответа)
                 .build();
 
-        // Создание экземпляра API
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://api.openweathermap.org/data/2.5/")  // Правильный базовый URL
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okHttpClient)  // Применяем кастомный OkHttpClient
+                .build();
+
         WeatherApi weatherApi = retrofit.create(WeatherApi.class);
 
-        // Вызов метода для получения данных о погоде
-        Call<WeatherResponse> call = weatherApi.getWeather(city, API_KEY, "metric");
+        Call<ForecastResponse> call = weatherApi.getForecast(city, API_KEY, units);
 
-        // Асинхронный запрос к API
-        call.enqueue(new Callback<WeatherResponse>() {
+        call.enqueue(new Callback<ForecastResponse>() {
             @Override
-            public void onResponse(Call<WeatherResponse> call, Response<WeatherResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    // Получаем данные и отображаем их в TextView
-                    WeatherResponse weatherResponse = response.body();
-                    String weatherInfo = "City: " + Objects.requireNonNull(weatherResponse).getName() + "\n" +
-                            "Temperature: " + weatherResponse.getMain().getTemp() + "°C\n" +
-                            "Humidity: " + weatherResponse.getMain().getHumidity() + "%\n" +
-                            "Wind Speed: " + weatherResponse.getWind().getSpeed() + " m/s";
+            public void onResponse(Call<ForecastResponse> call, Response<ForecastResponse> response) {
+                Log.d("MainActivity", "Response code: " + response.code());
 
-                    weatherTextView.setText(weatherInfo); // Отображение данных о погоде
+                if (response.isSuccessful() && response.body() != null) {
+                    StringBuilder forecastInfo = new StringBuilder();
+                    for (ForecastResponse.ForecastItem item : response.body().getForecastList()) {
+                        String date = item.getDateTime();
+                        double temp = item.getMain().getTemp();
+                        String description = item.getWeatherList().get(0).getDescription();
+                        String unitLabel = units.equals("metric") ? "°C" : "°F";
+
+                        forecastInfo.append("Date: ").append(date).append("\n")
+                                .append("Temp: ").append(temp).append(unitLabel).append("\n")
+                                .append("Weather: ").append(description).append("\n\n");
+                    }
+                    weatherTextView.setText(forecastInfo.toString());
                 } else {
-                    Toast.makeText(MainActivity.this, "Error in response", Toast.LENGTH_SHORT).show();
+                    Log.e("MainActivity", "Error in response: " + response.message());
+                    Toast.makeText(MainActivity.this, "Error in forecast response: " + response.message(), Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<WeatherResponse> call, Throwable t) {
+            public void onFailure(Call<ForecastResponse> call, Throwable t) {
                 Log.e("MainActivity", "API call failed: " + t.getMessage());
-                Toast.makeText(MainActivity.this, "Failed to load weather data", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Failed to load forecast data: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
